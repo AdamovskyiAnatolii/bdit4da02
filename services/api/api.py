@@ -1,15 +1,16 @@
 import json
-import time
 import logging
 
 from aiohttp import web
 from motor.motor_asyncio import AsyncIOMotorClient
 
+from exception import exception_handler
+from time_logger import time_logger
 
 config = {'host': 'mongo', 'port': 27017, 'name': 'stock-exchanges'}
 
-
-logging.basicConfig(level=logging.INFO, format='[%(asctime)s] %(levelname)s %(message)s')
+logging.basicConfig(level=logging.INFO,
+                    format='[%(asctime)s] %(levelname)s %(message)s')
 
 mongo_client = AsyncIOMotorClient(host=config['host'], port=config['port'])
 database = mongo_client[config['name']]
@@ -18,27 +19,23 @@ routes = web.RouteTableDef()
 
 
 @routes.get('/api/v1/markets')
+@time_logger
+@exception_handler
 async def handle_markets(request):
-    try:
-        start_time = time.time()
 
-        collections = await database.list_collection_names()
+    collections = await database.list_collection_names()
 
-        data = {}
-        for collection in collections:
-            data[collection] = await database[collection].distinct('symbol')
+    data = {}
+    for collection in collections:
+        data[collection] = await database[collection].distinct('symbol')
+    logging.info(msg=f"Returned count: {len(data)}")
 
-        end_time = time.time()
-
-        logging.info(msg=f"Total time: {round(end_time - start_time, 4)}, Returned count: {len(data)}")
-
-        return web.Response(text=json.dumps(data, indent=4), status=200)
-
-    except Exception as e:
-        return web.Response(text=json.dumps({"error": str(e)}, indent=4), status=400)
+    return web.Response(text=json.dumps(data, indent=4), status=200)
 
 
 @routes.get('/api/v1/trades')
+@time_logger
+@exception_handler
 async def trades_handle(request):
     """
 
@@ -49,48 +46,35 @@ async def trades_handle(request):
         limit
     :return:
     """
+    params = request.rel_url.query
 
-    try:
-        start_time = time.time()
+    exchange = params['exchange']
+    query = {}
 
-        params = request.rel_url.query
+    if 'symbol' in params:
+        query.update({'symbol': params['symbol'].upper().replace('_', '/')})
 
-        exchange = params['exchange']
-        query = {}
+    if 'till' in params:
+        query.update({'timestamp': {'$lte': int(params['till'])}})
 
-        if 'symbol' in params:
-            query.update({'symbol': params['symbol'].upper().replace('_', '/')})
+    limit = min(int(params['limit']), 10000) if 'limit' in params else 100
 
-        if 'limit' in params:
-            limit = min(int(params['limit']), 10000)
-        else:
-            limit = 100
+    cursor = database[exchange]\
+        .find(query, {'_id': 0})\
+        .sort("timestamp", -1)\
+        .limit(limit)
 
-        if 'till' in params:
-            query.update({'timestamp': {'$lte': int(params['till'])}})
+    data = []
+    async for item in cursor:
+        data.append(item)
 
-        cursor = database[exchange]\
-            .find(query, {'_id': 0})\
-            .sort("timestamp", -1)\
-            .limit(limit)
+    logging.info(msg=f"Returned count: {len(data)}")
 
-        data = []
-        async for item in cursor:
-            data.append(item)
-
-        end_time = time.time()
-
-        logging.info(msg=f"Total time: {round(end_time - start_time, 4)}, Returned count: {len(data)}")
-
-        return web.Response(text=json.dumps(data, indent=4), status=200)
-
-    except Exception as e:
-        return web.Response(text=json.dumps({"error": str(e)}, indent=4), status=400)
+    return web.Response(text=json.dumps(data, indent=4), status=200)
 
 
 app = web.Application()
 app.add_routes(routes)
-
 
 if __name__ == '__main__':
     web.run_app(app, port=5005)
