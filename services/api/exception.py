@@ -1,21 +1,5 @@
-import json
 import sys
-from functools import wraps
-from typing import Callable, Dict
-
-from aiohttp import web
-
-
-def exception_handler(func: Callable) -> Callable:
-    @wraps(func)
-    async def decorated_function(*args, **kwargs):
-        try:
-            return await func(*args, **kwargs)
-        except Exception as e:
-            err = error_info(e)
-            return web.json_response({"error": err}, status=400)
-
-    return decorated_function
+from typing import Dict
 
 
 def error_info(e: Exception) -> Dict[str, str]:

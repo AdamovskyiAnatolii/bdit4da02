@@ -3,7 +3,7 @@ import logging
 from aiohttp import web
 from motor.motor_asyncio import AsyncIOMotorClient
 
-from exception import exception_handler
+from exception import error_info
 from time_logger import time_logger
 
 config = {'host': 'mongo', 'port': 27017, 'name': 'stock-exchanges'}
@@ -19,7 +19,6 @@ routes = web.RouteTableDef()
 
 @routes.get('/api/v1/markets')
 @time_logger
-@exception_handler
 async def handle_markets(request):
     collections = await database.list_collection_names()
     data = {
@@ -32,7 +31,6 @@ async def handle_markets(request):
 
 @routes.get('/api/v1/trades')
 @time_logger
-@exception_handler
 async def trades_handle(request):
     """
 
@@ -67,7 +65,18 @@ async def trades_handle(request):
     return web.json_response(data, status=200)
 
 
-app = web.Application()
+async def error_middleware(app, handler):
+    async def middleware_handler(request):
+        try:
+            return await handler(request)
+        except Exception as ex:
+            err = error_info(ex)
+            return web.json_response({"error": err}, status=500)
+
+    return middleware_handler
+
+
+app = web.Application(middlewares=[error_middleware])
 app.add_routes(routes)
 
 if __name__ == '__main__':
