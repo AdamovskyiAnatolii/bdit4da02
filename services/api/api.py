@@ -1,14 +1,12 @@
 import logging
 from aiohttp import web
 
-from middlewares import error_middleware, time_middleware
-from routes import routes
-
+from api import routes, middlewares
 
 logging.basicConfig(level=logging.INFO,
                     format='[%(asctime)s] %(levelname)s %(message)s')
 
-app = web.Application(middlewares=[time_middleware, error_middleware])
+app = web.Application(middlewares=middlewares)
 app.add_routes(routes)
 
 if __name__ == '__main__':

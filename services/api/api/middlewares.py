@@ -3,7 +3,7 @@ import time
 
 from aiohttp import web
 
-from exception import error_info
+from api.exception import error_info
 
 
 async def error_middleware(app, handler):
@@ -26,3 +26,6 @@ async def time_middleware(app, handler):
         return res
 
     return middleware_handler
+
+
+middlewares = [time_middleware, error_middleware]
