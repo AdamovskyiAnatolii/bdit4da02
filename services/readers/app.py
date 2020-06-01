@@ -20,7 +20,7 @@ async def init_database():
         for collection_name in config.exchanges.keys():
             await db.create_collection(collection_name)
             await db[collection_name].create_index([('id', 1)], unique=True, background=False)
-            await db[collection_name].create_index([('symbol', 1), ('time', 1)], unique=True, background=False)
+            await db[collection_name].create_index([('symbol', 1), ('time', 1)], background=False)
 
             logging.info(f'Initialized {database_name}.{collection_name}.')
 
