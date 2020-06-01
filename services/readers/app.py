@@ -1,14 +1,31 @@
 import time
 import asyncio
 import logging
+from motor.motor_asyncio import AsyncIOMotorClient
 
 from models.reader import ExchangeReader
 import config
 
 
-async def run():
-    logging.basicConfig(level=logging.INFO, format='[%(asctime)s] %(levelname)s %(message)s')
 
+async def init_database():
+    client = AsyncIOMotorClient(host=config.database['host'], port=config.database['port'])
+    database_names = await client.list_database_names()
+    database_name = config.database['name']
+
+    if database_name not in database_names:
+        logging.info(f'Start {database_name} initializing.')
+
+        db = client[database_name]
+        for collection_name in config.exchanges.keys():
+            await db.create_collection(collection_name)
+            await db[collection_name].create_index([('id', 1)], unique=True, background=False)
+            await db[collection_name].create_index([('symbol', 1), ('time', 1)], unique=True, background=False)
+
+            logging.info(f'Initialized {database_name}.{collection_name}.')
+
+
+async def run():
     readers = {name: ExchangeReader(name) for name in config.exchanges}
 
     while True:
@@ -35,4 +52,7 @@ async def run():
 
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO, format='[%(asctime)s] %(levelname)s %(message)s')
+
+    asyncio.get_event_loop().run_until_complete(init_database())
     asyncio.get_event_loop().run_until_complete(run())
