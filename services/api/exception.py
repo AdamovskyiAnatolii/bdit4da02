@@ -13,8 +13,7 @@ def exception_handler(func: Callable) -> Callable:
             return await func(*args, **kwargs)
         except Exception as e:
             err = error_info(e)
-            return web.Response(text=json.dumps({"error": err}, indent=4),
-                                status=400)
+            return web.json_response({"error": err}, status=400)
 
     return decorated_function
 

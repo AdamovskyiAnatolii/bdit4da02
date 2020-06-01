@@ -1,4 +1,3 @@
-import json
 import logging
 
 from aiohttp import web
@@ -22,15 +21,13 @@ routes = web.RouteTableDef()
 @time_logger
 @exception_handler
 async def handle_markets(request):
-
     collections = await database.list_collection_names()
-
-    data = {}
-    for collection in collections:
-        data[collection] = await database[collection].distinct('symbol')
+    data = {
+        collection: await database[collection].distinct('symbol')
+        for collection in collections
+    }
     logging.info(msg=f"Returned count: {len(data)}")
-
-    return web.Response(text=json.dumps(data, indent=4), status=200)
+    return web.json_response(data, status=200)
 
 
 @routes.get('/api/v1/trades')
@@ -64,13 +61,10 @@ async def trades_handle(request):
         .sort("timestamp", -1)\
         .limit(limit)
 
-    data = []
-    async for item in cursor:
-        data.append(item)
-
+    data = [item async for item in cursor]
     logging.info(msg=f"Returned count: {len(data)}")
 
-    return web.Response(text=json.dumps(data, indent=4), status=200)
+    return web.json_response(data, status=200)
 
 
 app = web.Application()
