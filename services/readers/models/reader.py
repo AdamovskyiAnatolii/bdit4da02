@@ -5,6 +5,10 @@ from .database import DatabaseClient
 import config
 
 
+# Just to remove annoying pycharm warning
+_ = ccxt
+
+
 class ExchangeReader(object):
     api = {}
 
@@ -12,7 +16,7 @@ class ExchangeReader(object):
         self.exchange = exchange
 
         if exchange not in ExchangeReader.api:
-            ExchangeReader.api[exchange] = eval(f'ccxt.{exchange}()')
+            ExchangeReader.api[exchange] = getattr(ccxt, exchange)()
 
         self.database = config.database['name']
 

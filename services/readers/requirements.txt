@@ -3,3 +3,4 @@ aiohttp
 pymongo
 motor
 numpy
+gunicorn
