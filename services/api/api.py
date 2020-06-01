@@ -17,6 +17,27 @@ database = mongo_client[config['name']]
 routes = web.RouteTableDef()
 
 
+@routes.get('/api/v1/markets')
+async def handle_markets(request):
+    try:
+        start_time = time.time()
+
+        collections = await database.list_collection_names()
+
+        data = {}
+        for collection in collections:
+            data[collection] = await database[collection].distinct('symbol')
+
+        end_time = time.time()
+
+        logging.info(msg=f"Total time: {round(end_time - start_time, 4)}, Returned count: {len(data)}")
+
+        return web.Response(text=json.dumps(data, indent=4), status=200)
+
+    except Exception as e:
+        return web.Response(text=json.dumps({"error": str(e)}, indent=4), status=400)
+
+
 @routes.get('/api/v1/trades')
 async def trades_handle(request):
     """
