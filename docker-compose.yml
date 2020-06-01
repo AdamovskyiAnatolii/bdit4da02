@@ -1,5 +1,38 @@
-version: '3.7'
+version: '2.1'
 
 services:
-  web:
-    
+  mongo:
+    container_name: mongo
+    image: mongo
+    restart: always
+    ports: 
+      - "27017:27017"
+    volumes:
+      - 'mongodb:/data/db'
+  
+  readers:
+    container_name: readers
+    build: 'services/readers/.'
+    environment:
+      - PYTHONDONTWRITEBYTECODE=1
+      - PYTHONUNBUFFERED=1
+    restart: always
+    depends_on:
+      mongo:
+        condition: service_started
+
+  api: 
+    container_name: api
+    build: 'services/api/.'
+    restart: always
+    environment:
+      - PYTHONDONTWRITEBYTECODE=1
+      - PYTHONUNBUFFERED=1
+    ports: 
+      - "5005:5005"
+    depends_on:
+      mongo:
+        condition: service_started
+
+volumes:
+  mongodb:

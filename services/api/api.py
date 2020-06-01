@@ -6,7 +6,7 @@ from aiohttp import web
 from motor.motor_asyncio import AsyncIOMotorClient
 
 
-config = {'host': 'localhost', 'port': 27017, 'name': 'stock-exchanges'}
+config = {'host': 'mongo', 'port': 27017, 'name': 'stock-exchanges'}
 
 
 logging.basicConfig(level=logging.INFO, format='[%(asctime)s] %(levelname)s %(message)s')
