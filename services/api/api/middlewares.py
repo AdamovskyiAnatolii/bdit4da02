@@ -26,6 +26,3 @@ async def time_middleware(app, handler):
         return res
 
     return middleware_handler
-
-
-middlewares = [time_middleware, error_middleware]
